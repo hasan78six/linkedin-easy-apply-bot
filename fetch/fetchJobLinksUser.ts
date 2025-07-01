@@ -5,7 +5,7 @@ import buildUrl from '../utils/buildUrl';
 import wait from '../utils/wait';
 import selectors from '../selectors';
 
-const MAX_PAGE_SIZE = 7;
+const MAX_PAGE_SIZE = 25;
 const languageDetector = new LanguageDetect();
 
 async function getJobSearchMetadata({ page, location, keywords }: { page: Page, location: string, keywords: string }) {
@@ -63,7 +63,9 @@ async function* fetchJobLinksUser({ page, location, keywords, workplace: { remot
 
   const url = buildUrl('https://www.linkedin.com/jobs/search', searchParams);
 
-  const jobTitleRegExp = new RegExp(jobTitle, 'i');
+  // Updated regex to support all previous patterns, ignore 'frontend', accept 'API Manager', and support 'Nodejs Developer'
+  const jobTitlePattern = "^(?!.*frontend)(senior)?[\\s_-]*((full[\\s_-]?(stack|stack engineer|stack developer|stack software engineer|stack software developer))|fullstack engineer|fullstack developer|backend( engineer| developer)?|api manager|nodejs( developer| engineer)?|javascript|php|laravel|symfony|node[\\s_-]?js|node|js|react|vue)(\\s*\\(Relocation to [^)]+\\))?";
+  const jobTitleRegExp = new RegExp(jobTitlePattern, 'i');
   const jobDescriptionRegExp = new RegExp(jobDescription, 'i');
 
   while (numSeenJobs < numAvailableJobs) {
@@ -75,15 +77,24 @@ async function* fetchJobLinksUser({ page, location, keywords, workplace: { remot
 
     const jobListings = await page.$$(selectors.searchResultListItem);
 
-    for (let i = 0; i < Math.min(jobListings.length, MAX_PAGE_SIZE); i++) {
+    for (let i = 0; i < jobListings.length; i++) {
       try {
-        const [link, title] = await page.$eval(`${selectors.searchResultListItem}:nth-child(${i + 1}) ${selectors.searchResultListItemLink}`, (el) => {
-          const linkEl = el as HTMLLinkElement;
+        const jobItem = jobListings[i];
+        // Click the job item
+        await jobItem.click();
 
-          linkEl.click();
-
-          return [linkEl.href.trim(), linkEl.innerText.trim()];
-        });
+        // Get the link and title from the jobItem itself
+        const linkHandle = await jobItem.$(selectors.searchResultListItemLink);
+        let link = '';
+        let title = '';
+        if (linkHandle) {
+          link = await linkHandle.evaluate(el => (el as HTMLAnchorElement).href.trim());
+          title = await linkHandle.evaluate(el => (el as HTMLAnchorElement).innerText.trim());
+          await linkHandle.dispose();
+        } else {
+          // Handle the case where the link is not found
+          continue;
+        }
 
         await page.waitForFunction(async (selectors) => {
           const hasLoadedDescription = !!document.querySelector<HTMLElement>(selectors.jobDescription)?.innerText.trim();
@@ -92,7 +103,11 @@ async function* fetchJobLinksUser({ page, location, keywords, workplace: { remot
           return hasLoadedStatus && hasLoadedDescription;
         }, {}, selectors);
 
-        const companyName = await page.$eval(`${selectors.searchResultListItem}:nth-child(${i + 1}) ${selectors.searchResultListItemCompanyName}`, el => (el as HTMLElement).innerText).catch(() => 'Unknown');;
+        // Get the company name for the current job item
+        const companyName = await jobItem.$eval(
+          selectors.searchResultListItemCompanyName,
+          el => (el as HTMLElement).innerText
+        ).catch(() => 'Unknown');
         const jobDescription = await page.$eval(selectors.jobDescription, el => (el as HTMLElement).innerText);
         const canApply = !!(await page.$(selectors.easyApplyButtonEnabled));
         const jobDescriptionLanguage = languageDetector.detect(jobDescription, 1)[0][0];

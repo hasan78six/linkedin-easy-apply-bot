@@ -1,5 +1,5 @@
 export default {
-  easyApplyButtonEnabled: "button.jobs-apply-button:enabled",
+  easyApplyButtonEnabled: "div.jobs-apply-button--top-card button.jobs-apply-button:enabled",
 
   // Job search form
   keywordInput: 'input[id*="jobs-search-box-keyword-id"]',
@@ -24,18 +24,18 @@ export default {
 
   // Login
   captcha: "#captcha-internal",
-  emailInput: "#session_key",
-  passwordInput: "#session_password",
-  loginSubmit: "button[class*='sign-in-form__submit-btn']",
+  emailInput: "#username",
+  passwordInput: "#password",
+  loginSubmit: "button.btn__primary--large.from__button--floating[type='submit']",
   skipButton: "button[text()='Skip']",
 
   // fetch user
   searchResultList: ".jobs-search-results-list",
   searchResultListText: "small.jobs-search-results-list__text",
-  searchResultListItem: ".jobs-search-results-list li.jobs-search-results__list-item",
-  searchResultListItemLink: "a.job-card-list__title",
-  searchResultListItemCompanyName: "div.job-card-container__company-name, a.job-card-container__company-name",
-  jobDescription: "div.jobs-description-content > div.jobs-description-content__text > span",
+  searchResultListItem: "li.scaffold-layout__list-item[data-occludable-job-id]",
+  searchResultListItemLink: "a.job-card-list__title--link",
+  searchResultListItemCompanyName: "div.artdeco-entity-lockup__subtitle > span",
+  jobDescription: "#job-details span",
   appliedToJobFeedback: ".artdeco-inline-feedback",
 
   // fetch guest
@@ -45,4 +45,6 @@ export default {
   searchResultListItemTitleGuest: ".base-search-card__title",
   searchResultListItemSubtitleGuest: ".base-search-card__subtitle",
   searchResultListItemLocationGuest: ".job-search-card__location",
+
+  inAppVerificationHeading: ".header__content__heading__inapp",
 }

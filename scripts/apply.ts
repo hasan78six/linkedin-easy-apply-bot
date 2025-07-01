@@ -33,14 +33,22 @@ const askForPauseInput = async () => {
   const browser = await puppeteer.launch({
     headless: false,
     ignoreHTTPSErrors: true,
-    args: ["--disable-setuid-sandbox", "--no-sandbox",]
+    args: [
+      "--disable-setuid-sandbox",
+      "--no-sandbox",
+      "--start-maximized"
+    ],
+    defaultViewport: null
   });
-  const context = await browser.createIncognitoBrowserContext();
-  const listingPage = await context.newPage();
-
   const pages = await browser.pages();
+  const listingPage = pages[0]; // Use the default page
 
-  await pages[0].close();
+  // Set viewport to the full available screen size
+  const { width, height } = await listingPage.evaluate(() => ({
+    width: window.screen.availWidth,
+    height: window.screen.availHeight
+  }));
+  await listingPage.setViewport({ width, height });
 
   await login({
     page: listingPage,
@@ -68,7 +76,7 @@ const askForPauseInput = async () => {
 
   for await (const [link, title, companyName] of linkGenerator) {
     if (!applicationPage || process.env.SINGLE_PAGE !== "true")
-      applicationPage = await context.newPage();
+      applicationPage = await browser.newPage();
 
     await applicationPage.bringToFront();
 
